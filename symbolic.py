@@ -5,38 +5,49 @@ import operator
 # eg: f(1, x)
 #     x + y
 class Expr(object):
-    def __init__(self, func_call_args):
+    def __init__(self, func, func_call_args):
+        self._func = func
         self._children = func_call_args
 
     def subs(self, **kwargs):
-        return Expr(e.subs(**kwargs) for e in self._children)
+        return Expr(self._func,
+                    [e.subs(**kwargs) for e in self._children])
+
+    def __repr__(self):
+        return "{}({})".format(self._func,
+                               ",".join(str(c) for c in self._children))
+
+    def __eq__(self, that):
+        return self._func == that._func and list(self._children) == list(that._children)
 
 
-class Sym(Expr):
-    def __init__(self, name):
+class Sym(object):
+    """Symbolic value (nargs=0) or function literal(nargs>0)"""
+    def __init__(self, name, nargs=0):
         self._name = name
+        self._nargs = nargs
+
+    def __call__(self, arg):
+        return Expr(self._name, [arg])
 
     def __repr__(self):
         return self._name
+
+    def __eq__(self, that):
+        return self._name == that._name and self._nargs == that._nargs
 
     def subs(self, **kwargs):
         return kwargs.get(self._name, self)
 
 
-x = Sym("x")
-y = Sym("y")
+class Val(object):
+    """Value Wrapper"""
 
+    def __init__(self, val):
+        self._val = val
 
-class BareFunction(Sym):
-    def __init__(self, name, number_args):
-        super().__init__(name)
-
-        self.n = number_args
-
-    def __call__(self, *args):
-        assert len(args) <= self.n
-
-
+    def unwrap(self):
+        return self._val
 
 # def __add__(self, addend):
 #     return Add(self, addend)
