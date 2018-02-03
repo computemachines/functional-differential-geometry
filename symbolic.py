@@ -1,43 +1,46 @@
 import numbers
 import operator
 
-# represents a function invocation
+
+class ParentSymExpr:
+    pass
+
+
+# represents a function invocation with function value (nargs=nplaceholder)
 # eg: f(1, x)
 #     x + y
 class Expr(object):
     def __init__(self, func, func_call_args):
-        self._func = func
+        self._head = func
         self._children = func_call_args
 
     def subs(self, **kwargs):
-        return Expr(self._func,
+        return Expr(self._head.subs(**kwargs),
                     [e.subs(**kwargs) for e in self._children])
 
     def __repr__(self):
-        return "{}({})".format(self._func,
+        return "{}({})".format(self._head,
                                ",".join(str(c) for c in self._children))
 
+    def __call__(self, *args):
+        return Expr(self, args)
+
     def __eq__(self, that):
-        return self._func == that._func and list(self._children) == list(that._children)
+        return self._head == that._head and list(self._children) == list(that._children)
 
 
-class Sym(object):
-    """Symbolic value (nargs=0) or function literal(nargs>0)"""
-    def __init__(self, name, nargs=0):
-        self._name = name
-        self._nargs = nargs
-
-    def __call__(self, arg):
-        return Expr(self._name, [arg])
+class Sym(Expr):
+    def __init__(self, name):
+        self._head = name
 
     def __repr__(self):
-        return self._name
+        return self._head
 
     def __eq__(self, that):
-        return self._name == that._name and self._nargs == that._nargs
+        return self._head == that._head
 
     def subs(self, **kwargs):
-        return kwargs.get(self._name, self)
+        return kwargs.get(self._head, self)
 
 
 class Val(object):
